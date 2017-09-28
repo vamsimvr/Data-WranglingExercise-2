@@ -1,0 +1,168 @@
+---
+title: "Data Wrangling Project 2"
+author: "Vamsi K Mamidi"
+date: "September 26, 2017"
+output: word_document
+---
+
+
+### Loading Packages
+```{r setup, include=TRUE,message=FALSE}
+
+library (tidyr)
+library (readr)                                              
+library (dplyr)
+
+```
+
+## Load the data in RStudio
+```{r, include=TRUE}
+
+titanic_original <- read_csv("titanic_original.csv",col_names = TRUE)
+```
+
+###Output
+```{r, include=TRUE}
+
+glimpse(titanic_original)
+
+```
+
+## Port of embarkation
+
+```{r, include=TRUE}
+
+titanic_original %>%filter(is.na(embarked))
+
+```
+
+
+
+```{r}
+titanic_original <- titanic_original %>% replace_na(list(embarked = "S"), embarked)
+
+```
+###Output:
+
+```{r, include=TRUE}
+
+titanic_original %>%select(embarked)%>%unique()
+
+```
+
+
+## AGE
+
+Calculated Mean, Meadian, Min, Max after removing the missing values 
+```{r, include=TRUE}
+
+titanic_original%>%filter(!is.na(age))%>%summarise(mean=mean(age),max=max(age),min=min(age),median=median(age))
+
+```
+
+  The below plot is a scattered plot of ages vs Frequency, after removing the missing ages. we can see that the propability of a missing age value around the mean is more compared with other age groups.
+  
+### AGE DISTRIBUTION
+
+
+```{r, include=TRUE}
+
+titanic_original%>%filter(!is.na(age))%>%mutate(age=round(age,0))%>%group_by(age)%>%summarise(count_age=n())%>%arrange(desc(count_age))%>%with(plot(age,count_age,main = "AGE  DISTRIBUTION  "))
+
+
+```
+
+
+### AGE DISTRIBUTION by Gender  
+  
+  There are other ways to determine the missing age values which require more detail analysis by including other features like gender. For example we can calculate the mean age for both male and Female and we can replace the male missing age value with male mean age and female missing age with female mean age
+
+
+```{r, include=TRUE}
+
+titanic_original%>%filter(!is.na(age))%>%group_by(sex)%>%summarise(mean=mean(age),max=max(age),min=min(age),median=median(age))
+titanic_original%>%filter(!is.na(age))%>%mutate(age=round(age,0))%>%group_by(age,sex)%>%summarise(count_age=n())%>%arrange(desc(count_age))%>%with(plot(age,count_age,col=c("red","blue"),main = "AGE  DISTRIBUTION BY GENDER "))
+legend(x=64,y=30,legend=c("FEMALE","MALE"),fill=c("red","blue"))
+
+```
+
+
+I assume that by replacing the missing values depending on gender mean ages is better than just replacing all the missing age values with overall age mean, because as we can see that the distribution of age for male and female are different.
+
+### Replacing missing age values with gender age mean
+
+
+
+```{r, include=TRUE}
+
+
+titanic_original<-titanic_original%>%mutate(age=ifelse(is.na(age) & sex=="male" , 30.58523, ifelse(is.na(age) & sex=="female" , 28.68707,age)))
+
+```
+
+
+
+## Lifeboat
+
+Fill these empty slots with a dummy value e.g. the string 'None' or 'NA'
+```{r, include=TRUE}
+
+titanic_original<-titanic_original%>%mutate(boat=ifelse(is.na(boat)  ,"None",boat))
+
+
+
+```
+
+###Output:
+
+```{r, include=TRUE}
+
+titanic_original%>%group_by(boat)%>%summarise(count_boat=n())%>%arrange(desc(count_boat))
+
+```
+
+
+
+
+## Cabin
+
+Create a new column has_cabin_number which has 1 if there is a cabin number, and 0 otherwise.
+```{r, include=TRUE}
+
+titanic_original<-titanic_original%>%mutate(has_cabin_number=ifelse(is.na(cabin)  ,0,1))
+
+
+
+```
+
+###Output:
+
+```{r, include=TRUE}
+
+titanic_original%>%select(cabin,has_cabin_number,survived)
+
+```
+
+
+### Table for Survied Vs has Cabin number  
+  
+  
+
+```{r, include=TRUE}
+
+
+titanic_original%>%filter(! is.na(survived))%>%group_by(survived,has_cabin_number)%>%summarise(count_survied=n())
+
+```
+
+
+# Create a CSV file
+
+
+```{r, include=TRUE}
+
+write.csv(titanic_original, "titanic_clean.csv")
+
+
+
+```
